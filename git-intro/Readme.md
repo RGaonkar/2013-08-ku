@@ -3,6 +3,10 @@ Git Introduction
 
 MTH notes on talk for software carpentry. Check out http://www.slideshare.net/chacon/git-101-presentation for nice slides and a more in depth treatment.
 
+MTH's slides are (relative to the directory) at
+../support-example/Holder-sc-2013-pipeline-tests-git.pdf
+
+
 Initial steps
 -------------
 
