@@ -1,0 +1,350 @@
+\documentclass[xcolor=dvipsnames,compress,12pt]{beamer}
+
+%% General document %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{graphicx}
+\usepackage{upgreek}
+\usepackage{bm}
+\usepackage{natbib}
+\usepackage{xspace}
+\usepackage{appendix}
+%\usepackage[T1]{fontenc}
+%\usepackage[scaled]{helvet}
+%\renewcommand*\familydefault{\sfdefault} %% Only if the base font of the document is to be sans serif
+
+\usepackage[LGR,T1]{fontenc} %% LGR encoding is needed for loading the package gfsneohellenic
+%\usepackage[default]{gfsneohellenic}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{mycol1}{RGB}{2,0,145}
+\definecolor{mycol2}{RGB}{25,23,191}
+%% Beamer Layout %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\useoutertheme[footline=authorinstitute,subsection=false]{miniframes}
+%\useoutertheme[subsection=false,shadow]{miniframes}
+\useinnertheme{circles}
+
+\useoutertheme{default}
+\renewcommand{\Pr}{\mathbb{P}}
+
+%%%%%%%%%%%%%%%%%%% Xtra footline
+\makeatletter
+% add a macro that saves its argument
+\newcommand{\footlineextra}[1]{\gdef\insertfootlineextra{#1}}
+\newbox\footlineextrabox
+% add a beamer template that sets the saved argument in a box.
+% The * means that the beamer font and color "footline extra" are automatically added. 
+\defbeamertemplate*{footline extra}{default}{
+    \begin{beamercolorbox}[ht=2.25ex,dp=1ex,leftskip=3mm,rightskip=3mm]{footline extra}
+    \insertfootlineextra
+    %\par\vspace{2.5pt}
+    \end{beamercolorbox}
+}
+\addtobeamertemplate{footline}{%
+    % set the box with the extra footline material but make it add no vertical space
+    \setbox\footlineextrabox=\vbox{\usebeamertemplate*{footline extra}}
+    \vskip -\ht\footlineextrabox
+    \vskip -\dp\footlineextrabox
+    \box\footlineextrabox%
+}
+{}
+% patch \begin{frame} to reset the footline extra material
+\let\beamer@original@frame=\frame
+\def\frame{\gdef\insertfootlineextra{}\beamer@original@frame}
+\footlineextra{}
+\makeatother
+\setbeamercolor{footline extra}{fg=structure.fg}% for instance
+%%%%%%%%%%%%%%%%%%%%
+
+
+\usefonttheme{serif}
+\setbeamertemplate{navigation symbols} {}
+%\setbeamerfont{title like}{shape=\textsc}
+%\setbeamerfont{frametitle}{shape=\textsc}
+\setbeamercolor{title}{fg= mycol2}
+\setbeamercolor{subtitle}{fg=black}
+
+\setbeamerfont{frametitle}{size=\LARGE}
+\setbeamercolor{frametitle}{fg= mycol2}
+
+\setbeamercolor*{lower separation line head}{bg= mycol1} 
+\setbeamercolor*{normal text}{fg=black,bg=white} 
+\setbeamercolor*{alerted text}{fg=red} 
+\setbeamercolor*{example text}{fg=black} 
+\setbeamercolor*{structure}{fg=black} 
+ 
+\setbeamercolor*{palette tertiary}{fg=black,bg=black!10} 
+\setbeamercolor*{palette quaternary}{fg=black,bg=black!10} 
+
+\DeclareMathAlphabet{\msfsl}{T1}{cmr}{m}{it}
+\DeclareMathAlphabet{\msyf}{OML}{cmm}{m}{it}
+\newcommand{\alf}{\upalpha}
+\definecolor{dgray}{gray}{0.4}
+\definecolor{tan}{rgb}{0.5,0.5,0.3}
+
+%\renewcommand{\(}{\begin{columns}}
+%\renewcommand{\)}{\end{columns}}
+%\newcommand{\<}[1]{\begin{column}{#1}}
+%\renewcommand{\>}{\end{column}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\title{\LARGE{Software Carpentry \\{\large \texttt{git}, testing, pipelines}}}
+\date{\large Aug 23, 2013}
+\author[Holder]{Mark T. Holder}
+\institute[pt2012]{\inst{}Department of Ecology and Evolutionary Biology, University of Kansas}
+\newcommand{\myfootnote}[1]{\let\thefootnote\relax\footnotetext{#1}}
+
+\usepackage{pgf}
+\include{positioning}
+\usepackage{tikz} 
+\usetikzlibrary{trees,arrows,positioning,automata}
+
+\tikzset{suitestate/.style={circle,rounded corners,draw=blue!90,fill=blue!05,ultra thick}}
+\tikzset{state/.style={rectangle,rounded corners,draw=blue!90,fill=blue!05,ultra thick}}
+\tikzset{ostate/.style={rectangle,rounded corners,draw=blue!90,fill=blue!05,ultra thick}}
+\tikzset{empty/.style={rectangle,rounded corners,draw=white,fill=white,thick}}
+%\usepackage{paralist}
+\usepackage{cancel}
+
+\begin{document}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\maketitle
+%\begin{frame}
+%\titlepage
+%\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Motivating example}
+\begin{tabular}{lcccccccccccc}
+human\hskip 2mm  & C & G  & A & C & C & {A} & G & G & T & A & T &G\\
+chimp\hskip 2mm  & C & G  & A & C & C & {A} & G & G & T & A & C &G\\
+gorilla\hskip 2mm& C & C  & G & T & C & {C} & G & G & T & C & T &G\\
+orang\hskip 2mm  & C & C  & G & C & C & {T} & G & G & T & C & C & G\\
+\end{tabular}
+
+\end{frame}
+
+\begin{frame}{Motivating example}
+\begin{tabular}{lcccccccccccc}
+human\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}T} &G\\
+chimp\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}C} &G\\
+gorilla\hskip 2mm& C & {\color{red}C}  & {\color{red}G} & T & C & {C} & G & G & T & {\color{red}C} & {\color{blue}T} &G\\
+orang\hskip 2mm  & C & {\color{red}C}  & {\color{red}G} & C & C & {T} & G & G & T & {\color{red}C} & {\color{blue}C} & G\\
+\end{tabular}
+\vskip 1em
+{\color{red} human-with-chimp: 3}\\
+{\color{blue} human-with-gorilla: 1}\\
+{\color{green} human-with-orang: 0}\\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Motivating example}
+\begin{tabular}{lcccccccccccc}
+human\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}T} &G\\
+chimp\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}C} &G\\
+gorilla\hskip 2mm& C & {\color{red}C}  & {\color{red}G} & T & C & {C} & G & G & T & {\color{red}C} & {\color{blue}T} &G\\
+orang\hskip 2mm  & C & {\color{red}C}  & {\color{red}G} & C & C & {T} & G & G & T & {\color{red}C} & {\color{blue}C} & G\\
+\end{tabular}
+\vskip 1em
+{\color{red} human-with-chimp: 3}\\
+{\color{blue} human-with-gorilla: 1}\\
+{\color{green} human-with-orang: 0}\\
+\vskip 1em
+``best'' = largest count = 3\\
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Motivating example}
+\begin{tabular}{lcccccccccccc}
+human\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}T} &G\\
+chimp\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}C} &G\\
+gorilla\hskip 2mm& C & {\color{red}C}  & {\color{red}G} & T & C & {C} & G & G & T & {\color{red}C} & {\color{blue}T} &G\\
+orang\hskip 2mm  & C & {\color{red}C}  & {\color{red}G} & C & C & {T} & G & G & T & {\color{red}C} & {\color{blue}C} & G\\
+\end{tabular}
+\vskip 1em
+{\color{red} human-with-chimp: 3}\\
+{\color{blue} human-with-gorilla: 1}\\
+{\color{green} human-with-orang: 0}\\
+\vskip 1em
+``best'' = largest count = 3\\
+\vskip 1em
+``support'' = best - second best = 3 - 1 = 2
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Motivating example}
+\begin{tabular}{lcccccccccccc}
+human\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}T} &G\\
+chimp\hskip 2mm  & C & {\color{red}G}  & {\color{red}A} & C & C & {A} & G & G & T & {\color{red}A} & {\color{blue}C} &G\\
+gorilla\hskip 2mm& C & {\color{red}C}  & {\color{red}G} & T & C & {C} & G & G & T & {\color{red}C} & {\color{blue}T} &G\\
+orang\hskip 2mm  & C & {\color{red}C}  & {\color{red}G} & C & C & {T} & G & G & T & {\color{red}C} & {\color{blue}C} & G\\
+\end{tabular}
+\vskip 1em
+{\color{red} human-with-chimp: 3}\\
+{\color{blue} human-with-gorilla: 1}\\
+{\color{green} human-with-orang: 0}\\
+\vskip 1em
+``best'' = largest count = 3\\
+\vskip 1em
+``support'' = best - second best = 3 - 1 = 2
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Motivating example}
+Input: A file with many character matrices, each with 4 species.
+
+\vskip 1em
+
+Operations: 
+\begin{enumerate}
+    \item Calculate the support for each matrix.
+    \item Report the smallest integer that is a larger than at least 95\% of the support values that you calculated in step 1.
+\end{enumerate}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{IPython is great, but...}
+\Large
+Storing code in files is better for:
+\begin{itemize}
+    \item Sharing code,
+    \item Running on cluster,
+    \item Reuse of code$\ldots$
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{The programmer's workflow:}
+\Large
+\begin{enumerate}
+    \item Write code in a text editor
+    \item Save the file -- save to the filesystem
+    \item Execute the code from your terminal
+    \item Rewrite in text editor
+    \item Go back to step 2
+\end{enumerate}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Some useful tricks}
+
+{\large
+Command-tab to switch between editor and terminal.\\
+Arrow-up-key to recall previous commands. \par
+}
+\vskip 1em
+Opening a GUI file browser in your terminal's working directory:\par
+Mac: {\tt \$ open .}\par
+GitBash on Windows: {\tt \$ explorer .}\par
+Ubuntu: {\tt \$ nautilus .}\par
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Version control}
+\Large
+Except for trivial tasks, programming involves
+\begin{itemize}
+    \item writing code,
+    \item testing whether it works
+    \item repeat
+\end{itemize}
+
+You will have many {\em versions} of your code.
+
+A version control system helps you manage changes to a code-base
+\end{frame}
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{{\tt git} -- a distributed version control system}
+``Distributed'' here means every developer has the entire version history. There is no central server.
+
+{\tt git} lets you
+\begin{itemize}
+    \item return to a previous snapshot of your code,
+    \item merge work from several developers,
+    \item easily share your code,
+    \item easily back up your code.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{github $\neq$ {\tt git}}
+\Large
+\url{https://github.com/} is a website that offers a lot of very nice services centered around code stored in {\tt git}. But {\tt git} is a command line tool that was developed years before github.
+
+If you are going to use {\tt git}, you probably want to create a github account to see what the fuss is about.
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{}
+\Large
+I know a lot of programmers.\par
+
+I do not know {\em any} programmers who
+\begin{itemize}
+    \item know how to use a version control system, and
+    \item prefer to write code without using version control system
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\Large
+
+I do not know {\em any} programmers who:
+\begin{itemize}
+    \item know how to use a {\em distributed} version control system, and
+    \item prefer centralized version control to {\em distributed} version control
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\Large
+{\tt git} is clearly one of the best distributed version control systems.
+\vskip 1em
+If you are going to do more than dabble with programming, you should learn {\tt git}.
+\vskip 1em
+Learning {\tt git} will hurt a bit. It is not an easy tool.
+
+\end{frame}
+
+\begin{frame}{Goals for this {\tt git} Intro}
+\Large
+\begin{itemize}
+    \item become comfortable with the ``core'' git commands
+    \item gain a sense of the other important features.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Core {\tt git} commands}
+\large
+\begin{itemize}
+    \item {\tt git init}  -- create and empty repository
+    \item {\tt git clone}  -- obtain an existing repository
+    \item {\tt git add}  and {\tt git commit} to add content to the repository
+    \item {\tt git checkout} -- copy code out of the repository to your filesystem
+    \item {\tt git status} -- create a report of how {\tt git} sees the world
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{More {\tt git} that I'll show you, but we won't practice (much)}
+\large
+\begin{itemize}
+    \item {\tt git pull} -- grab the latest changes from a repository on another computer. Get other people's changes.
+    \item {\tt git push} -- publish your latest changes to a repository on another computer. Give other people your code.
+    \item {\tt git branch}
+    \item {\tt git merge}
+    \item {\tt git fetch}  
+\end{itemize}
+
+\end{frame}
+
+
+\end{document}
+
