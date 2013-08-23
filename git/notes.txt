@@ -1,0 +1,4 @@
+http://www.slideshare.net/chacon/git-101-presentation
+
+Scott Chacon's page 111: wd - git add -> indexhttp://www.slideshare.net/chacon/git-101-presentation
+
